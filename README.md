@@ -1,106 +1,129 @@
-# iguacu_ai
-I2A2 - Agentes Inteligentes
+# 🤖 iguacu_ai — Agente Autônomo de EDA (I2A2 - Agentes Inteligentes)
 
-Equipe: Iguaçu AI
+Equipe: Iguaçu AI  
+Membros:  
+- Bruno Ribeiro  
+- Jefferson L. G. Silva  
+- José G. L. Filho
 
-Membros da equipe:
-Bruno Ribeiro;
-Jefferson L. G. Silva; 
-José G. L. Filho
+Este projeto implementa um Agente Autônomo especializado em Análise Exploratória de Dados (EDA), utilizando LLM com Function Calling para orquestrar ferramentas de análise em um DataFrame. O agente recebe uma pergunta (ou um prompt autônomo), planeja, chama funções Python (tools) para executar análises e sintetiza os resultados para o usuário — incluindo gráficos salvos em `plots/`.
 
-# 🤖 Autonomous Data Analysis Agent (EDA Agent) - iguacu_ai
+## 1. A Framework Escolhida
+- LLM: OpenAI GPT-4o (via API)
+- Agente: OpenAI Function Calling (Tools)
+- Interface: Gradio (chat web interativo)
+- Análise de Dados: Pandas, Matplotlib, Seaborn
 
-Este projeto implementa um Agente Autônomo especializado em Análise Exploratória de Dados (EDA) genérica, utilizando Large Language Models (LLMs) com a técnica de Function Calling para interagir com um `DataFrame` de dados.
+## 2. Como a Solução Foi Estruturada
+Arquitetura modular (mantendo a lógica funcional do notebook original):
 
-O agente é capaz de receber uma pergunta, planejar uma sequência de análises usando suas ferramentas programadas em Python, executar essas ferramentas e sintetizar os resultados em um formato compreensível para o usuário, incluindo gráficos.
+- `tools.py`:  
+  - Define o estado do dataset (`df`, `dataset_info`)  
+  - Funções de análise (tools): `get_data_summary`, `analyze_distribution`, `analyze_correlation`, `detect_outliers`, `compare_groups`, além de placeholders `analyze_temporal_patterns` e `execute_custom_code`.  
+  - Geração e salvamento de gráficos em `plots/`.
+  - Manifesto das tools (`tools`) e mapeamento (`available_functions`).
 
-## Estrutura do Projeto e Informações Obrigatórias
+- `agent.py`:  
+  - `AgentMemory` para manter histórico, resultados de análises e conclusões.  
+  - `run_agent_core`: laço principal do agente (LLM decide chamadas de tool, executa, agrega resultados e responde).  
+  - `AUTONOMOUS_PROMPT_EXTENDED` e `autonomous_analysis` para disparar uma EDA completa automaticamente.
 
-### 1. A Framework Escolhida
+- `app.py`:  
+  - Interface Gradio com upload, carregamento via Kaggle (opcional), execução da análise autônoma, chat interativo, e painéis de histórico/conclusões.
 
-A solução principal utiliza:
-* **LLM**: **OpenAI GPT-4o** (via API) como motor de raciocínio.
-* **Agente**: **OpenAI Function Calling** (ou Tools) para a arquitetura do agente.
-* **Interface**: **Gradio** para uma interface de chat web interativa, facilitando o carregamento de dados e a visualização imediata dos resultados.
-* **Análise de Dados**: **Pandas**, **Matplotlib** e **Seaborn** para manipulação e visualização de dados.
+- `requirements.txt`: dependências.  
+- `.env.example`: modelo de configuração de variáveis de ambiente.  
 
-### 2. Como a Solução Foi Estruturada
+Observação: Os gráficos são salvos no diretório `plots/` e referenciados nas respostas como “Gráfico salvo em ...”. Em notebooks (Colab/Jupyter), também são exibidos via `display()`.
 
-A solução foi estruturada de forma **modular** para separar a lógica de negócio (Análise de Dados), a inteligência do Agente (LLM Orchestration) e a interface de usuário:
+## 3. Perguntas e Respostas (exemplos)
+Considerando um dataset genérico (ex.: Titanic ou Credit Card Fraud):
 
-1.  **Módulo `tools.py`**: Contém a definição do estado dos dados (`df`, `dataset_info`) e todas as **ferramentas de análise programadas** (ex: `analyze_distribution`, `analyze_correlation`). Essas ferramentas manipulam o `df` e retornam um resultado formatado em JSON.
-2.  **Módulo `agent.py`**: Contém o **núcleo de raciocínio**. A classe `AgentMemory` gerencia o histórico e o contexto do dataset. A função `run_agent_core` implementa o loop de execução do agente, onde o LLM decide qual ferramenta chamar, executa o código Python correspondente e itera até gerar uma resposta final para o usuário.
-3.  **Módulo `app.py`**: É o **ponto de entrada** da aplicação. Ele configura a interface Gradio, manipula o carregamento de arquivos CSV ou datasets do Kaggle, e conecta a entrada do usuário ao `run_agent_core`.
+- P1: “Qual a distribuição de idade (Age) dos passageiros?”  
+  Tool: `analyze_distribution("Age")`  
+  Resposta:  
+  “A distribuição de idade revela concentração entre 20–40 anos, com outliers em idades altas. Gráfico salvo em `plots/distribution_Age_*.png`.”
 
-### 3. Pelo Menos 4 Perguntas com as Respectivas Respostas (e 1 gráfico)
+- P2: “Qual a correlação entre Fare e Age?”  
+  Tool: `analyze_correlation()`  
+  Resposta:  
+  “A correlação entre Fare e Age é fraca (ex.: r ≈ 0.12), sugerindo ausência de relação linear forte.”
 
-Considerando um dataset genérico (ex: Titanic), o agente executa a seguinte sequência lógica:
+- P3: “Quantos valores faltantes existem e quais colunas são mais afetadas?”  
+  Tool: `get_data_summary()`  
+  Resposta:  
+  “A coluna 'Cabin' possui forte presença de valores faltantes (ex.: ~77%). 'Age' também apresenta ~19% de missing.”
 
-| Pergunta | Tool(s) Acionada(s) | Resposta do Agente (Simulada) |
-| :--- | :--- | :--- |
-| **P1:** Qual a distribuição de idade (`Age`) dos passageiros? (Resultado Gráfico) | `analyze_distribution("Age")` | "A distribuição de idade revela que a maioria dos passageiros está na faixa dos 20-40 anos. O histograma mostra uma ligeira concentração de jovens adultos e outliers de idades mais avançadas. [Caminho para o gráfico gerado]" |
-| **P2:** Qual a correlação entre a tarifa (`Fare`) e a idade (`Age`)? | `analyze_correlation()` | "A correlação entre Tarifa (`Fare`) e Idade (`Age`) é fraca (ex: `r = 0.12`), indicando que não há uma relação linear significativa entre a idade de um passageiro e o valor que ele pagou pela passagem." |
-| **P3:** Quantos valores faltantes existem e quais colunas são mais afetadas? | `get_data_summary()` | "O resumo dos dados aponta que a coluna 'Cabin' possui 77% de valores faltantes. 'Age' também apresenta dados ausentes, com 19% de *missing values*. O agente precisa de estratégias de imputação para usar essas colunas em modelos." |
-| **P4:** Existe diferença no preço médio da tarifa (`Fare`) entre as classes (`Pclass`)? | `compare_groups(column='Fare', group_by='Pclass')` | "Sim. A análise de comparação de grupos mostra que a classe 1 tem uma tarifa média significativamente maior do que as classes 2 e 3. Isso é claramente visível nos boxplots gerados pela ferramenta de comparação, que também apontam maior variância de preços na primeira classe." |
+- P4: “Existe diferença no preço médio da tarifa (Fare) entre as classes (Pclass)?”  
+  Tool: `compare_groups(column="Fare", group_by="Pclass")`  
+  Resposta (com gráfico):  
+  “Sim. A classe 1 apresenta média de tarifa significativamente maior do que classes 2 e 3. Boxplots e histogramas por grupo salvos em `plots/group_comparison_Fare_vs_Pclass_*.png`.”
 
-### 4. Uma Pergunta sobre as Conclusões do Agente e a Resposta
+## 4. Conclusão do Agente (exemplo)
+Pergunta: “Com base nas análises, quais as principais conclusões e próximos passos?”
+Resposta (síntese):  
+- Qualidade dos Dados: ‘Cabin’ e ‘Age’ requerem imputação.  
+- Poder Preditivo: ‘Pclass’ tem elevada influência sobre ‘Fare’.  
+- Distribuição: População dominada por jovens adultos.  
+Próximos Passos:  
+- Imputar ‘Age’ por mediana estratificada por ‘Pclass’;  
+- Explorar interações entre ‘Fare’, ‘Pclass’ e variáveis categóricas.
 
-| Pergunta | Resposta do Agente (Simulada - Síntese Final) |
-| :--- | :--- |
-| **P:** Com base nas análises realizadas, quais são as principais conclusões e próximos passos recomendados? | **Conclusões Chave:** 1. **Qualidade dos Dados:** As colunas `Cabin` e `Age` requerem tratamento de *missing values*. 2. **Poder Preditivo:** A classe social (`Pclass`) é um forte fator discriminatório para a tarifa (`Fare`), o que sugere um alto poder preditivo para modelos. 3. **Distribuição:** A maior parte da população do dataset é composta por jovens adultos. **Próximos Passos:** 1. Imputar valores faltantes em `Age` usando a média ou mediana por grupo (`Pclass`). 2. Continuar a explorar a relação entre `Fare` e `Pclass` com outras variáveis categóricas. |
+## 5. Códigos Fonte
+- `app.py`, `agent.py`, `tools.py` (neste repositório).
+- O notebook original (Google Colab) foi modularizado sem alterar a lógica funcional.
 
-### 5. Os Códigos Fonte Gerados
+## 6. Link para Acessar o Agente
+Recomendação de deploy: Hugging Face Spaces (Gradio).
 
-Os códigos fonte gerados são os módulos Python apresentados em detalhes acima: **`app.py`**, **`agent.py`** e **`tools.py`**. O arquivo `requirements.txt` lista as dependências.
+Passos:
+1. Crie um Space em https://huggingface.co/spaces (SDK Gradio).
+2. Conecte ao GitHub: `https://github.com/jlgsilva/iguacu_ai`.
+3. Configure os Secrets do Space:
+   - `OPENAI_API_KEY` (obrigatório)
+   - `KAGGLE_USERNAME` e `KAGGLE_KEY` (opcionais)
+4. Defina o comando de execução (Space com Gradio geralmente detecta automaticamente):
+   - Python: `app.py` como entrypoint.
+5. O link do Space será algo como:  
+   `https://huggingface.co/spaces/seu_usuario/iguacu_ai`
 
-### 6. Um Link para Acessar seu Agente
+## 7. Ocultação de Chaves
+- Não commit suas chaves no repositório.
+- Use variáveis de ambiente:
+  - Local: copie `.env.example` para `.env` e exporte no shell ou use `python-dotenv`.
+  - Hugging Face Spaces: configure em “Settings > Secrets”.
 
-Para obter um link permanente, a aplicação deve ser implantada usando o código do seu GitHub.
+---
 
-**Recomendação de Deploy: Hugging Face Spaces (Gradio)**
+## Como Rodar Localmente
 
-O caminho mais simples é usar um **Hugging Face Space** com o SDK Gradio, pois sua aplicação já utiliza Gradio.
+1) Clone o repositório:
+```bash
+git clone https://github.com/jlgsilva/iguacu_ai.git
+cd iguacu_ai
 
-1.  Crie um novo **Space** no Hugging Face (SDK Gradio).
-2.  Conecte-o ao seu repositório GitHub (`https://github.com/jlgsilva/iguacu_ai`).
-3.  Defina as seguintes variáveis de ambiente nos **Secrets** do Space (para ocultar chaves):
-    * `OPENAI_API_KEY` (Obrigatório)
-    * `KAGGLE_USERNAME` (Opcional, para carregar datasets do Kaggle)
-    * `KAGGLE_KEY` (Opcional, para carregar datasets do Kaggle)
+2) Crie e ative um ambiente virtual:
 
-**Link de Acesso (Exemplo após Deploy):**
-`[Link gerado pelo Hugging Face Spaces]` (O link será gerado após o deploy, ex: `https://huggingface.co/spaces/seu_usuario/iguacu_ai`)
+python -m venv venv
+# Linux/macOS
+source venv/bin/activate
+# Windows (PowerShell)
+.\venv\Scripts\Activate.ps1
 
-### 7. Ocultar Chaves Utilizadas
+3) Instale as dependências:
 
-Todas as chaves (`OPENAI_API_KEY`) são tratadas da seguinte forma:
+pip install -r requirements.txt
 
-1.  **Leitura Segura**: O código Python (em `app.py` e `agent.py`) lê a chave de API da variável de ambiente `OPENAI_API_KEY` usando a biblioteca `python-dotenv` ou o sistema de ambiente do Hugging Face/Streamlit.
-2.  **Template**: O arquivo **`.env.example`** é fornecido como modelo, mas **não contém a chave real**.
-3.  **Deploy**: Você deve configurar a chave real no painel de **Secrets/Variáveis de Ambiente** do seu serviço de hospedagem (Hugging Face Spaces, por exemplo).
+4) Defina a variável de ambiente com sua chave OpenAI:
+Método rápido (shell):
 
-## Como Executar a Aplicação Localmente
+export OPENAI_API_KEY="sk-..."
+# Windows PowerShell:
+# $env:OPENAI_API_KEY="sk-..."
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone [https://github.com/jlgsilva/iguacu_ai.git](https://github.com/jlgsilva/iguacu_ai.git)
-    cd iguacu_ai
-    ```
-2.  **Crie e ative um ambiente virtual:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # Linux/macOS
-    # .\venv\Scripts\activate # Windows
-    ```
-3.  **Instale as dependências:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  **Configure a chave de API:**
-    * Crie um arquivo chamado **`.env`** na raiz do projeto (use o `.env.example` como modelo).
-    * Insira sua chave: `OPENAI_API_KEY="sk-..."`
-5.  **Execute a aplicação:**
-    ```bash
-    python app.py
-    ```
-A interface Gradio será iniciada, e você poderá acessar o agente através do link local fornecido no seu terminal (ex: `http://127.0.0.1:7860`).
+Ou crie um .env baseado em .env.example e exporte com sua ferramenta preferida.
+
+5. Execute a aplicação:
+python app.py
+
+Acesse no navegador: http://127.0.0.1:7860 (ou a porta definida pela variável PORT).
