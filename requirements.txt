@@ -1,0 +1,9 @@
+openai
+pandas
+numpy
+matplotlib
+seaborn
+plotly
+gradio
+kagglehub
+python-dotenv
