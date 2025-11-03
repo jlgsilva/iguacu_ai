@@ -20,6 +20,9 @@ José Gomes Lopes Filho — zefilho@msn.com
 **Aplicação (Hugging Face Space):**  
 🔗 [https://huggingface.co/spaces/jlgsilva/iguacu_ai_final](https://huggingface.co/spaces/jlgsilva/iguacu_ai_final)
 
+**Relatório, apresentação e vídeo de pitch/demonstração:**  
+🔗 [https://drive.google.com/drive/folders/1MzzRysOrV7jb-ZC0k_v8Em-z8hhF1hFc?usp=sharing]
+
 **Licença:** MIT
 
 ---
